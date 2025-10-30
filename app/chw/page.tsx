@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Activity, LogOut, Coins, ExternalLink, Loader2, Home, Syringe, Calendar } from 'lucide-react';
-import { getUser, logout, fetchWithAuth } from '@/lib/client-auth';
+import { Loader2, Home, Syringe, Calendar } from 'lucide-react';
+import { getUser, fetchWithAuth } from '@/lib/client-auth';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { PointsBalance } from '@/components/dashboard/PointsBalance';
 import * as geohash from 'ngeohash';
 
 export default function CHWPage() {
@@ -97,49 +99,10 @@ export default function CHWPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-7 h-7 text-primary" strokeWidth={2.5} />
-            <div>
-              <h1 className="text-xl font-bold">AfyaUkweli</h1>
-              <p className="text-xs text-muted-foreground">CHW Portal</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.county}</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+    <DashboardLayout user={user} role="CHW">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="space-y-6">
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <Coins className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Token Balance</CardTitle>
-                  <CardDescription>CHW Points (CHWP)</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{Math.floor(Math.random() * 500 + 100)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Rewards for verified tasks
-              </p>
-            </CardContent>
-          </Card>
+          <PointsBalance userId={user.id} />
 
           <Card>
             <CardHeader>
@@ -239,7 +202,7 @@ export default function CHWPage() {
             </p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

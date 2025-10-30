@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Activity,
-  LogOut,
   TrendingUp,
   Users,
   CheckCircle,
@@ -19,7 +18,8 @@ import {
   ExternalLink,
   Download,
 } from 'lucide-react';
-import { getUser, logout, fetchWithAuth } from '@/lib/client-auth';
+import { getUser, fetchWithAuth } from '@/lib/client-auth';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -71,33 +71,8 @@ export default function AdminPage() {
   const tokenId = process.env.NEXT_PUBLIC_HTS_TOKEN_ID || '0.0.yyyyy';
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-7 h-7 text-primary" strokeWidth={2.5} />
-            <div>
-              <h1 className="text-xl font-bold">AfyaUkweli</h1>
-              <p className="text-xs text-muted-foreground">Admin Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={exportCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <div className="text-right">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">Administrator</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-6 py-8">
+    <DashboardLayout user={user} role="ADMIN">
+      <div className="container mx-auto px-6 py-8">
         <div className="mb-8">
           <h2 className="text-4xl font-bold mb-2">Dashboard Overview</h2>
           <p className="text-muted-foreground">
@@ -306,8 +281,8 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
