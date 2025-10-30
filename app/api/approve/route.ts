@@ -4,7 +4,6 @@ import { getUserFromRequest } from '@/lib/auth';
 import { submitApprovalLog, transferPoints, getHashScanUrl } from '@/lib/hedera';
 import { z } from 'zod';
 import { isSimpleMode } from '@/lib/config';
-import { getTaskById as storeGetTaskById, updateTask as storeUpdateTask } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -37,7 +36,8 @@ export async function POST(req: NextRequest) {
 
     let task: any = null;
     if (isSimpleMode()) {
-      const t = await storeGetTaskById(taskId);
+      const { getTaskById } = await import('@/lib/simple-store');
+      const t = await getTaskById(taskId);
       if (!t) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
       task = { ...t, chw: { chw_account_id: null } };
     } else {
@@ -88,7 +88,8 @@ export async function POST(req: NextRequest) {
 
     let updatedTask: any = null;
     if (isSimpleMode()) {
-      updatedTask = await storeUpdateTask(taskId, {
+      const { updateTask } = await import('@/lib/simple-store');
+      updatedTask = await updateTask(taskId, {
         status: approved ? 'APPROVED' : 'REJECTED',
         approved_at: new Date().toISOString() as any,
         supervisor_id: user.id,

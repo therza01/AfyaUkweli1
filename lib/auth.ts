@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { supabase, User, UserRole } from './supabase';
 import { isSimpleMode } from './config';
-import { getUserById as getUserByIdStore } from './simple-store';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_for_demo_only';
 
@@ -54,7 +53,8 @@ export async function getUserFromRequest(req: NextRequest): Promise<User | null>
   }
 
   if (isSimpleMode()) {
-    return await getUserByIdStore(payload.userId);
+    const { getUserById } = await import('./simple-store');
+    return await getUserById(payload.userId);
   } else {
     const { data, error } = await supabase
       .from('users')

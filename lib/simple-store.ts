@@ -1,3 +1,4 @@
+import 'server-only';
 import fs from 'fs';
 import path from 'path';
 import { getDataDir } from './config';
@@ -267,4 +268,3 @@ export async function computeStats() {
     },
   };
 }
-

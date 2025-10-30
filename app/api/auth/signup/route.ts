@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { hashPassword, generateToken } from '@/lib/auth';
 import { isSimpleMode } from '@/lib/config';
-import { createUser as storeCreateUser, getUserByEmail as storeGetUserByEmail } from '@/lib/simple-store';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -26,11 +25,12 @@ export async function POST(req: NextRequest) {
 
     let newUser: any = null;
     if (isSimpleMode()) {
-      const exists = await storeGetUserByEmail(validatedData.email);
+      const { createUser, getUserByEmail } = await import('@/lib/simple-store');
+      const exists = await getUserByEmail(validatedData.email);
       if (exists) {
         return NextResponse.json({ error: 'Email already registered' }, { status: 400 });
       }
-      newUser = await storeCreateUser({
+      newUser = await createUser({
         name: validatedData.name,
         email: validatedData.email,
         password: validatedData.password,

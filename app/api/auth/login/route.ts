@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { comparePassword, generateToken } from '@/lib/auth';
 import { isSimpleMode } from '@/lib/config';
-import { getUserByEmail as storeGetUserByEmail, verifyPassword as storeVerifyPassword } from '@/lib/simple-store';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -21,10 +20,9 @@ export async function POST(req: NextRequest) {
     let user: any = null;
     let isValidPassword = false;
     if (isSimpleMode()) {
-      user = await storeGetUserByEmail(email);
-      if (user) {
-        isValidPassword = !!(await storeVerifyPassword(email, password));
-      }
+      const { getUserByEmail, verifyPassword } = await import('@/lib/simple-store');
+      user = await getUserByEmail(email);
+      if (user) isValidPassword = !!(await verifyPassword(email, password));
     } else {
       const { data, error } = await supabase
         .from('users')

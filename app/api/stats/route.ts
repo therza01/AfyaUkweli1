@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 import { isSimpleMode } from '@/lib/config';
-import { computeStats } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,6 +15,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (isSimpleMode()) {
+      const { computeStats } = await import('@/lib/simple-store');
       const stats = await computeStats();
       return NextResponse.json(stats);
     }

@@ -5,7 +5,6 @@ import { submitTaskLog, getHashScanUrl } from '@/lib/hedera';
 import { ulid } from 'ulid';
 import { z } from 'zod';
 import { isSimpleMode } from '@/lib/config';
-import { insertTask as storeInsertTask, fetchTasks as storeFetchTasks } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -47,7 +46,8 @@ export async function POST(req: NextRequest) {
     const hcsResult = await submitTaskLog(taskPayload);
 
     if (isSimpleMode()) {
-      const task = await storeInsertTask({
+      const { insertTask } = await import('@/lib/simple-store');
+      const task = await insertTask({
         task_id: taskId,
         chw_id: user.id,
         task_type: taskType,
@@ -123,7 +123,8 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     if (isSimpleMode()) {
-      const { data, count } = await storeFetchTasks({ user, status, page, limit });
+      const { fetchTasks } = await import('@/lib/simple-store');
+      const { data, count } = await fetchTasks({ user, status, page, limit });
       return NextResponse.json({
         tasks: data,
         pagination: {
