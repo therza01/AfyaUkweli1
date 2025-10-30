@@ -11,6 +11,7 @@ import {
   PrivateKey,
   Hbar,
 } from '@hashgraph/sdk';
+import crypto from 'crypto';
 
 export interface HederaConfig {
   network: 'testnet' | 'mainnet';
@@ -51,6 +52,14 @@ export interface TransferResult {
 }
 
 let clientInstance: Client | null = null;
+
+function isHederaConfigured() {
+  return Boolean(process.env.HEDERA_ACCOUNT_ID && process.env.HEDERA_PRIVATE_KEY);
+}
+
+function mockTxHash(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 export function getHederaClient(config?: HederaConfig): Client {
   if (clientInstance) {
@@ -95,22 +104,22 @@ export async function createHcsTopic(memo?: string): Promise<{ topicId: string }
 }
 
 export async function submitTaskLog(payload: TaskLogPayload): Promise<HcsResult> {
-  const client = getHederaClient();
   const topicId = process.env.HCS_TOPIC_ID;
 
-  if (!topicId) {
-    throw new Error('HCS_TOPIC_ID not configured');
+  // Mock mode when Hedera is not configured
+  if (!isHederaConfigured() || !topicId) {
+    return { txId: `mock-${Date.now()}`, txHashHex: mockTxHash() };
   }
 
+  const client = getHederaClient();
   const message = JSON.stringify(payload);
 
-  const transaction = new TopicMessageSubmitTransaction({
-    topicId,
-    message,
-  });
+  const transaction = new TopicMessageSubmitTransaction()
+    .setTopicId(topicId)
+    .setMessage(message);
 
   const txResponse = await transaction.execute(client);
-  const receipt = await txResponse.getReceipt(client);
+  await txResponse.getReceipt(client);
 
   return {
     txId: txResponse.transactionId.toString(),
@@ -119,22 +128,21 @@ export async function submitTaskLog(payload: TaskLogPayload): Promise<HcsResult>
 }
 
 export async function submitApprovalLog(payload: ApprovalLogPayload): Promise<HcsResult> {
-  const client = getHederaClient();
   const topicId = process.env.HCS_TOPIC_ID;
 
-  if (!topicId) {
-    throw new Error('HCS_TOPIC_ID not configured');
+  if (!isHederaConfigured() || !topicId) {
+    return { txId: `mock-${Date.now()}`, txHashHex: mockTxHash() };
   }
 
+  const client = getHederaClient();
   const message = JSON.stringify(payload);
 
-  const transaction = new TopicMessageSubmitTransaction({
-    topicId,
-    message,
-  });
+  const transaction = new TopicMessageSubmitTransaction()
+    .setTopicId(topicId)
+    .setMessage(message);
 
   const txResponse = await transaction.execute(client);
-  const receipt = await txResponse.getReceipt(client);
+  await txResponse.getReceipt(client);
 
   return {
     txId: txResponse.transactionId.toString(),
@@ -176,36 +184,32 @@ export async function createHtsToken(
 }
 
 export async function mintHts(amount: number): Promise<{ txId: string }> {
-  const client = getHederaClient();
   const tokenId = process.env.HTS_TOKEN_ID;
-
-  if (!tokenId) {
-    throw new Error('HTS_TOKEN_ID not configured');
+  if (!isHederaConfigured() || !tokenId) {
+    return { txId: `mock-${Date.now()}` };
   }
 
+  const client = getHederaClient();
   const transaction = await new TokenMintTransaction()
     .setTokenId(tokenId)
     .setAmount(amount)
     .execute(client);
 
-  const receipt = await transaction.getReceipt(client);
-
-  return {
-    txId: transaction.transactionId.toString(),
-  };
+  await transaction.getReceipt(client);
+  return { txId: transaction.transactionId.toString() };
 }
 
 export async function transferPoints(
   toAccountId: string,
   amount: number
 ): Promise<TransferResult> {
-  const client = getHederaClient();
   const tokenId = process.env.HTS_TOKEN_ID;
-  const operatorAccountId = AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
-
-  if (!tokenId) {
-    throw new Error('HTS_TOKEN_ID not configured');
+  if (!isHederaConfigured() || !tokenId) {
+    return { receiptStatus: 'MOCK_SUCCESS', txHashHex: mockTxHash() };
   }
+
+  const client = getHederaClient();
+  const operatorAccountId = AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
 
   const transaction = await new TransferTransaction()
     .addTokenTransfer(tokenId, operatorAccountId, -amount)
@@ -213,11 +217,7 @@ export async function transferPoints(
     .execute(client);
 
   const receipt = await transaction.getReceipt(client);
-
-  return {
-    receiptStatus: receipt.status.toString(),
-    txHashHex: Buffer.from(transaction.transactionHash).toString('hex'),
-  };
+  return { receiptStatus: receipt.status.toString(), txHashHex: Buffer.from(transaction.transactionHash).toString('hex') };
 }
 
 export function getHashScanUrl(

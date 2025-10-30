@@ -97,14 +97,19 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    let query = supabase
-      .from('tasks')
-      .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
-
-    if (user.role === 'CHW') {
-      query = query.eq('chw_id', user.id);
-    } else if (user.role === 'SUPERVISOR' && user.county) {
-      query = query.eq('users.county', user.county);
+    let query;
+    if (user.role === 'SUPERVISOR' && user.county) {
+      query = supabase
+        .from('tasks')
+        .select('*, chw:users!inner(name, email, county)', { count: 'exact' })
+        .eq('chw.county', user.county);
+    } else {
+      query = supabase
+        .from('tasks')
+        .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
+      if (user.role === 'CHW') {
+        query = query.eq('chw_id', user.id);
+      }
     }
 
     if (status) {

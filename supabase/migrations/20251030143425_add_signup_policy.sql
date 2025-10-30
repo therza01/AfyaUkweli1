@@ -11,7 +11,8 @@
 */
 
 -- Drop existing insert policy if exists
-DROP POLICY IF EXISTS "CHWs can insert own tasks" ON users;
+-- Clean up any previous signup policy if present (idempotent)
+DROP POLICY IF EXISTS "Allow public user signup" ON users;
 
 -- Add policy to allow public signups
 CREATE POLICY "Allow public user signup"
