@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { supabase, User, UserRole } from './supabase';
+import { isSimpleMode } from './config';
+import { getUserById as getUserByIdStore } from './simple-store';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_for_demo_only';
 
@@ -51,17 +53,20 @@ export async function getUserFromRequest(req: NextRequest): Promise<User | null>
     return null;
   }
 
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', payload.userId)
-    .maybeSingle();
+  if (isSimpleMode()) {
+    return await getUserByIdStore(payload.userId);
+  } else {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', payload.userId)
+      .maybeSingle();
 
-  if (error || !data) {
-    return null;
+    if (error || !data) {
+      return null;
+    }
+    return data as User;
   }
-
-  return data as User;
 }
 
 export function hashConsentCode(code: string): string {

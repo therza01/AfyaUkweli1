@@ -4,6 +4,8 @@ import { getUserFromRequest, hashConsentCode } from '@/lib/auth';
 import { submitTaskLog, getHashScanUrl } from '@/lib/hedera';
 import { ulid } from 'ulid';
 import { z } from 'zod';
+import { isSimpleMode } from '@/lib/config';
+import { insertTask as storeInsertTask, fetchTasks as storeFetchTasks } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,9 +45,8 @@ export async function POST(req: NextRequest) {
 
     const hcsResult = await submitTaskLog(taskPayload);
 
-    const { data: task, error: insertError } = await supabase
-      .from('tasks')
-      .insert({
+    if (isSimpleMode()) {
+      const task = await storeInsertTask({
         task_id: taskId,
         chw_id: user.id,
         task_type: taskType,
@@ -54,19 +55,42 @@ export async function POST(req: NextRequest) {
         notes,
         status: 'PENDING',
         hcs_log_txn_hash: hcsResult.txHashHex,
-      })
-      .select()
-      .single();
+        hcs_approval_txn_hash: null as any,
+        hts_transfer_txn_hash: null as any,
+        points_awarded: 0,
+        supervisor_id: null as any,
+      } as any);
+      return NextResponse.json({
+        task,
+        hcsTransactionHash: hcsResult.txHashHex,
+        hashScanUrl: getHashScanUrl('transaction', hcsResult.txHashHex),
+      });
+    } else {
+      const { data: task, error: insertError } = await supabase
+        .from('tasks')
+        .insert({
+          task_id: taskId,
+          chw_id: user.id,
+          task_type: taskType,
+          consent_code_hash: consentHash,
+          geohash,
+          notes,
+          status: 'PENDING',
+          hcs_log_txn_hash: hcsResult.txHashHex,
+        })
+        .select()
+        .single();
 
-    if (insertError) {
-      throw insertError;
+      if (insertError) {
+        throw insertError;
+      }
+
+      return NextResponse.json({
+        task,
+        hcsTransactionHash: hcsResult.txHashHex,
+        hashScanUrl: getHashScanUrl('transaction', hcsResult.txHashHex),
+      });
     }
-
-    return NextResponse.json({
-      task,
-      hcsTransactionHash: hcsResult.txHashHex,
-      hashScanUrl: getHashScanUrl('transaction', hcsResult.txHashHex),
-    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -97,42 +121,46 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    let query;
-    if (user.role === 'SUPERVISOR' && user.county) {
-      query = supabase
-        .from('tasks')
-        .select('*, chw:users!inner(name, email, county)', { count: 'exact' })
-        .eq('chw.county', user.county);
+    if (isSimpleMode()) {
+      const { data, count } = await storeFetchTasks({ user, status, page, limit });
+      return NextResponse.json({
+        tasks: data,
+        pagination: {
+          page,
+          limit,
+          total: count,
+          totalPages: Math.ceil(count / limit),
+        },
+      });
     } else {
-      query = supabase
-        .from('tasks')
-        .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
-      if (user.role === 'CHW') {
-        query = query.eq('chw_id', user.id);
+      let query: any;
+      if (user.role === 'SUPERVISOR' && user.county) {
+        query = supabase
+          .from('tasks')
+          .select('*, chw:users!inner(name, email, county)', { count: 'exact' })
+          .eq('users.county', user.county);
+      } else {
+        query = supabase
+          .from('tasks')
+          .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
+        if (user.role === 'CHW') {
+          query = query.eq('chw_id', user.id);
+        }
       }
+      if (status) query = query.eq('status', status);
+      query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return NextResponse.json({
+        tasks: data,
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit),
+        },
+      });
     }
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json({
-      tasks: data,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
-      },
-    });
   } catch (error) {
     console.error('Task fetch error:', error);
     return NextResponse.json(

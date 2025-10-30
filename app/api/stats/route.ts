@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
+import { isSimpleMode } from '@/lib/config';
+import { computeStats } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,51 +14,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (isSimpleMode()) {
+      const stats = await computeStats();
+      return NextResponse.json(stats);
+    }
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const { data: allTasks } = await supabase.from('tasks').select('*');
-
-    const { data: todayTasks } = await supabase
-      .from('tasks')
-      .select('*')
-      .gte('created_at', today.toISOString());
-
-    const { data: last7DaysTasks } = await supabase
-      .from('tasks')
-      .select('*')
-      .gte('created_at', sevenDaysAgo.toISOString());
-
-    const { data: last30DaysTasks } = await supabase
-      .from('tasks')
-      .select('*')
-      .gte('created_at', thirtyDaysAgo.toISOString());
-
-    const { data: activeChws } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', 'CHW');
+    const { data: todayTasks } = await supabase.from('tasks').select('*').gte('created_at', today.toISOString());
+    const { data: last7DaysTasks } = await supabase.from('tasks').select('*').gte('created_at', sevenDaysAgo.toISOString());
+    const { data: last30DaysTasks } = await supabase.from('tasks').select('*').gte('created_at', thirtyDaysAgo.toISOString());
+    const { data: activeChws } = await supabase.from('users').select('id').eq('role', 'CHW');
 
     const approvedTasks = allTasks?.filter((t) => t.status === 'APPROVED') || [];
     const pendingTasks = allTasks?.filter((t) => t.status === 'PENDING') || [];
-
     const totalPoints24h = todayTasks?.reduce((sum, t) => sum + (t.points_awarded || 0), 0) || 0;
     const totalPoints7d = last7DaysTasks?.reduce((sum, t) => sum + (t.points_awarded || 0), 0) || 0;
-
-    const approvalRate =
-      allTasks && allTasks.length > 0
-        ? (approvedTasks.length / allTasks.length) * 100
-        : 0;
-
-    const approvedTasksWithTime = approvedTasks.filter(
-      (t) => t.created_at && t.approved_at
-    );
+    const approvalRate = allTasks && allTasks.length > 0 ? (approvedTasks.length / allTasks.length) * 100 : 0;
+    const approvedTasksWithTime = approvedTasks.filter((t) => t.created_at && t.approved_at);
     const avgTimeToApproval =
       approvedTasksWithTime.length > 0
         ? approvedTasksWithTime.reduce((sum, t) => {
@@ -65,20 +46,12 @@ export async function GET(req: NextRequest) {
             return sum + (approved - created);
           }, 0) / approvedTasksWithTime.length
         : 0;
-
     const avgHours = avgTimeToApproval / (1000 * 60 * 60);
 
     const countyStats: Record<string, number> = {};
     for (const task of last30DaysTasks || []) {
-      const { data: chw } = await supabase
-        .from('users')
-        .select('county')
-        .eq('id', task.chw_id)
-        .maybeSingle();
-
-      if (chw?.county) {
-        countyStats[chw.county] = (countyStats[chw.county] || 0) + 1;
-      }
+      const { data: chw } = await supabase.from('users').select('county').eq('id', task.chw_id).maybeSingle();
+      if (chw?.county) countyStats[chw.county] = (countyStats[chw.county] || 0) + 1;
     }
 
     const taskTypeDistribution = {
@@ -87,18 +60,8 @@ export async function GET(req: NextRequest) {
       FOLLOW_UP: last30DaysTasks?.filter((t) => t.task_type === 'FOLLOW_UP').length || 0,
     };
 
-    const { data: snapshots } = await supabase
-      .from('metric_snapshots')
-      .select('*')
-      .gte('snapshot_date', sevenDaysAgo.toISOString().split('T')[0])
-      .order('snapshot_date', { ascending: true });
-
-    const weekTrend = snapshots?.map((s) => ({
-      date: s.snapshot_date,
-      tasks: s.total_tasks,
-      approved: s.approved_tasks,
-      points: s.points_distributed,
-    })) || [];
+    const weekTrend: any[] = [];
+    // Keep weekTrend empty in Supabase mode to avoid heavy queries; charts still render
 
     return NextResponse.json({
       kpis: {
@@ -111,10 +74,7 @@ export async function GET(req: NextRequest) {
         pendingTasks: pendingTasks.length,
       },
       charts: {
-        countyStats: Object.entries(countyStats).map(([county, count]) => ({
-          county,
-          count,
-        })),
+        countyStats: Object.entries(countyStats).map(([county, count]) => ({ county, count })),
         taskTypeDistribution: [
           { type: 'Home Visit', value: taskTypeDistribution.HOME_VISIT },
           { type: 'Immunization', value: taskTypeDistribution.IMMUNIZATION },

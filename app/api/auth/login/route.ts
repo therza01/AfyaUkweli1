@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { comparePassword, generateToken } from '@/lib/auth';
+import { isSimpleMode } from '@/lib/config';
+import { getUserByEmail as storeGetUserByEmail, verifyPassword as storeVerifyPassword } from '@/lib/simple-store';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -15,20 +17,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = loginSchema.parse(body);
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+    let user: any = null;
+    let isValidPassword = false;
+    if (isSimpleMode()) {
+      user = await storeGetUserByEmail(email);
+      if (user) {
+        isValidPassword = !!(await storeVerifyPassword(email, password));
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+      user = data;
+      if (error || !user) {
+        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      }
+      isValidPassword = await comparePassword(password, user.password_hash);
     }
-
-    const isValidPassword = await comparePassword(password, user.password_hash);
 
     if (!isValidPassword) {
       return NextResponse.json(

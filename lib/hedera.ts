@@ -11,7 +11,7 @@ import {
   PrivateKey,
   Hbar,
 } from '@hashgraph/sdk';
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
 
 export interface HederaConfig {
   network: 'testnet' | 'mainnet';
@@ -58,7 +58,7 @@ function isHederaConfigured() {
 }
 
 function mockTxHash(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return randomBytes(32).toString('hex');
 }
 
 export function getHederaClient(config?: HederaConfig): Client {

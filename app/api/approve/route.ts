@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 import { submitApprovalLog, transferPoints, getHashScanUrl } from '@/lib/hedera';
 import { z } from 'zod';
+import { isSimpleMode } from '@/lib/config';
+import { getTaskById as storeGetTaskById, updateTask as storeUpdateTask } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,14 +34,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { taskId, approved, reason } = approvalSchema.parse(body);
 
-    const { data: task, error: fetchError } = await supabase
-      .from('tasks')
-      .select('*, chw:users!tasks_chw_id_fkey(chw_account_id)')
-      .eq('id', taskId)
-      .maybeSingle();
-
-    if (fetchError || !task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    let task: any = null;
+    if (isSimpleMode()) {
+      const t = await storeGetTaskById(taskId);
+      if (!t) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      task = { ...t, chw: { chw_account_id: null } };
+    } else {
+      const { data, error: fetchError } = await supabase
+        .from('tasks')
+        .select('*, chw:users!tasks_chw_id_fkey(chw_account_id)')
+        .eq('id', taskId)
+        .maybeSingle();
+      if (fetchError || !data) {
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      }
+      task = data;
     }
 
     if (task.status !== 'PENDING') {
@@ -76,23 +85,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { data: updatedTask, error: updateError } = await supabase
-      .from('tasks')
-      .update({
+    let updatedTask: any = null;
+    if (isSimpleMode()) {
+      updatedTask = await storeUpdateTask(taskId, {
         status: approved ? 'APPROVED' : 'REJECTED',
-        approved_at: new Date().toISOString(),
+        approved_at: new Date().toISOString() as any,
         supervisor_id: user.id,
-        rejection_reason: !approved ? reason : null,
-        hcs_approval_txn_hash: hcsResult.txHashHex,
-        hts_transfer_txn_hash: htsTransferHash,
-        points_awarded: pointsAwarded,
-      })
-      .eq('id', taskId)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw updateError;
+        rejection_reason: !approved ? (reason as any) : (null as any),
+        hcs_approval_txn_hash: hcsResult.txHashHex as any,
+        hts_transfer_txn_hash: (htsTransferHash as any) || null,
+        points_awarded: pointsAwarded as any,
+      } as any);
+    } else {
+      const { data, error: updateError } = await supabase
+        .from('tasks')
+        .update({
+          status: approved ? 'APPROVED' : 'REJECTED',
+          approved_at: new Date().toISOString(),
+          supervisor_id: user.id,
+          rejection_reason: !approved ? reason : null,
+          hcs_approval_txn_hash: hcsResult.txHashHex,
+          hts_transfer_txn_hash: htsTransferHash,
+          points_awarded: pointsAwarded,
+        })
+        .eq('id', taskId)
+        .select()
+        .single();
+      if (updateError) throw updateError;
+      updatedTask = data;
     }
 
     return NextResponse.json({
