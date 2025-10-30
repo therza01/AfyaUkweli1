@@ -6,6 +6,7 @@ import { createUser as storeCreateUser, getUserByEmail as storeGetUserByEmail } 
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

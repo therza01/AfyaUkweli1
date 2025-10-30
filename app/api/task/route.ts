@@ -8,6 +8,7 @@ import { isSimpleMode } from '@/lib/config';
 import { insertTask as storeInsertTask, fetchTasks as storeFetchTasks } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const taskSchema = z.object({
   taskType: z.enum(['HOME_VISIT', 'IMMUNIZATION', 'FOLLOW_UP']),

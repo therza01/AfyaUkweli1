@@ -5,6 +5,7 @@ import { isSimpleMode } from '@/lib/config';
 import { computeStats } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

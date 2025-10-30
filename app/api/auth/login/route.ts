@@ -6,6 +6,7 @@ import { getUserByEmail as storeGetUserByEmail, verifyPassword as storeVerifyPas
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const loginSchema = z.object({
   email: z.string().email(),

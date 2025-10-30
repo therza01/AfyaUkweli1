@@ -7,6 +7,7 @@ import { isSimpleMode } from '@/lib/config';
 import { getTaskById as storeGetTaskById, updateTask as storeUpdateTask } from '@/lib/simple-store';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const approvalSchema = z.object({
   taskId: z.string(),

@@ -224,6 +224,23 @@ Open [http://localhost:3000](http://localhost:3000)
 npm run build
 ```
 
+### Simple Mode (No external services)
+
+For the fastest demo and deployment without Supabase/Hedera credentials:
+
+- Set `SIMPLE_MODE=true` in your environment. The API will use a lightweight JSON file store
+  (persisted under `/tmp` in serverless or `./.afya-data` locally) and mock Hedera tx hashes.
+- Required envs:
+  - `SIMPLE_MODE=true`
+  - `JWT_SECRET=your_random_secret`
+  - `NEXT_PUBLIC_HASHSCAN_BASE=https://hashscan.io/testnet`
+- Optional envs:
+  - `SIMPLE_DATA_DIR=/tmp/afya` to override data path
+
+Deploy notes:
+- Vercel: works out of the box in Simple Mode (data is ephemeral per instance).
+- Docker: pass the same envs; data will persist in the container filesystem unless rebuilt.
+
 ---
 
 ## Architecture
