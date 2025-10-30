@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Activity, LogOut, CheckCircle2, XCircle, ExternalLink, Loader2, Clock, MapPin } from 'lucide-react';
-import { getUser, logout, fetchWithAuth } from '@/lib/client-auth';
+import { CheckCircle2, XCircle, ExternalLink, Loader2, Clock, MapPin } from 'lucide-react';
+import { getUser, fetchWithAuth } from '@/lib/client-auth';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { format } from 'date-fns';
 
 export default function SupervisorPage() {
@@ -114,29 +115,8 @@ export default function SupervisorPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-7 h-7 text-primary" strokeWidth={2.5} />
-            <div>
-              <h1 className="text-xl font-bold">AfyaUkweli</h1>
-              <p className="text-xs text-muted-foreground">Supervisor Portal</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.county}</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <DashboardLayout user={user} role="SUPERVISOR">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h2 className="text-3xl font-bold mb-2">Task Approvals</h2>
           <p className="text-muted-foreground">Review and verify CHW tasks</p>
@@ -308,7 +288,7 @@ export default function SupervisorPage() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

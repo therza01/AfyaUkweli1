@@ -11,6 +11,7 @@ import {
   LogOut,
   TrendingUp,
   Users,
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
   CheckCircle,
   Clock,
   Coins,
@@ -63,47 +64,26 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-      </div>
+      </DashboardLayout>
     );
   }
 
   const topicId = process.env.NEXT_PUBLIC_HCS_TOPIC_ID || '0.0.xxxxx';
   const tokenId = process.env.NEXT_PUBLIC_HTS_TOKEN_ID || '0.0.yyyyy';
 
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-7 h-7 text-primary" strokeWidth={2.5} />
-            <div>
-              <h1 className="text-xl font-bold">AfyaUkweli</h1>
-              <p className="text-xs text-muted-foreground">Admin Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={exportCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <div className="text-right">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">Administrator</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+  const exportCSV = () => {
+    toast.success('CSV export feature coming soon');
+  };
 
-      <main className="container mx-auto px-6 py-8">
+  return (
+    <DashboardLayout user={user} role="ADMIN">
+      <div className="container mx-auto px-6 py-8">
         <div className="mb-8">
           <h2 className="text-4xl font-bold mb-2">Dashboard Overview</h2>
           <p className="text-muted-foreground">
             Real-time insights into CHW activities and performance
           </p>
-        </div>
+        </DashboardLayout>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
@@ -130,7 +110,7 @@ export default function AdminPage() {
             subtitle="Total registered"
             icon={Users}
           />
-        </div>
+        </DashboardLayout>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
@@ -188,7 +168,7 @@ export default function AdminPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
+        </DashboardLayout>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <Card className="lg:col-span-1">
@@ -236,20 +216,20 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Pending Tasks</span>
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                  </div>
+                  </DashboardLayout>
                   <p className="text-2xl font-bold">{stats?.kpis.pendingTasks || 0}</p>
-                </div>
+                </DashboardLayout>
                 <div className="p-4 rounded-lg bg-secondary/50">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Avg Approval Time</span>
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                  </div>
+                  </DashboardLayout>
                   <p className="text-2xl font-bold">{stats?.kpis.avgTimeToApprovalHours || 0}h</p>
-                </div>
-              </div>
+                </DashboardLayout>
+              </DashboardLayout>
             </CardContent>
           </Card>
-        </div>
+        </DashboardLayout>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -274,8 +254,8 @@ export default function AdminPage() {
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                </div>
-              </div>
+                </DashboardLayout>
+              </DashboardLayout>
             </CardContent>
           </Card>
 
@@ -301,16 +281,15 @@ export default function AdminPage() {
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                </div>
-              </div>
+                </DashboardLayout>
+              </DashboardLayout>
             </CardContent>
           </Card>
-        </div>
-      </main>
-    </div>
+        </DashboardLayout>
+      </DashboardLayout>
+    </DashboardLayout>
   );
 }
 
 function Label({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
-}
