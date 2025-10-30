@@ -8,10 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Activity,
-  LogOut,
   TrendingUp,
   Users,
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
   CheckCircle,
   Clock,
   Coins,
@@ -20,7 +18,8 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
   ExternalLink,
   Download,
 } from 'lucide-react';
-import { getUser, logout, fetchWithAuth } from '@/lib/client-auth';
+import { getUser, fetchWithAuth } from '@/lib/client-auth';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -64,16 +63,12 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-      </DashboardLayout>
+      </div>
     );
   }
 
   const topicId = process.env.NEXT_PUBLIC_HCS_TOPIC_ID || '0.0.xxxxx';
   const tokenId = process.env.NEXT_PUBLIC_HTS_TOKEN_ID || '0.0.yyyyy';
-
-  const exportCSV = () => {
-    toast.success('CSV export feature coming soon');
-  };
 
   return (
     <DashboardLayout user={user} role="ADMIN">
@@ -83,7 +78,7 @@ export default function AdminPage() {
           <p className="text-muted-foreground">
             Real-time insights into CHW activities and performance
           </p>
-        </DashboardLayout>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
@@ -110,7 +105,7 @@ export default function AdminPage() {
             subtitle="Total registered"
             icon={Users}
           />
-        </DashboardLayout>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
@@ -168,7 +163,7 @@ export default function AdminPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </DashboardLayout>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <Card className="lg:col-span-1">
@@ -216,20 +211,20 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Pending Tasks</span>
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                  </DashboardLayout>
+                  </div>
                   <p className="text-2xl font-bold">{stats?.kpis.pendingTasks || 0}</p>
-                </DashboardLayout>
+                </div>
                 <div className="p-4 rounded-lg bg-secondary/50">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Avg Approval Time</span>
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                  </DashboardLayout>
+                  </div>
                   <p className="text-2xl font-bold">{stats?.kpis.avgTimeToApprovalHours || 0}h</p>
-                </DashboardLayout>
-              </DashboardLayout>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </DashboardLayout>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -254,8 +249,8 @@ export default function AdminPage() {
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                </DashboardLayout>
-              </DashboardLayout>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -281,15 +276,16 @@ export default function AdminPage() {
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                </DashboardLayout>
-              </DashboardLayout>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </DashboardLayout>
-      </DashboardLayout>
+        </div>
+      </div>
     </DashboardLayout>
   );
 }
 
 function Label({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
+}
