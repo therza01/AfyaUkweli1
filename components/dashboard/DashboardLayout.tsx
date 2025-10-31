@@ -13,7 +13,8 @@ import {
   Users,
   Menu,
   X,
-  Coins
+  Coins,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,13 +26,16 @@ interface DashboardLayoutProps {
 
 const navigationConfig = {
   CHW: [
-    { href: '/chw', label: 'Log Tasks', icon: Home },
+    { href: '/chw', label: 'Dashboard', icon: Home },
+    { href: '/chw/attendance', label: 'Attendance', icon: Clock },
   ],
   SUPERVISOR: [
     { href: '/supervisor', label: 'Approvals', icon: CheckSquare },
+    { href: '/supervisor/attendance', label: 'Attendance', icon: Clock },
   ],
   ADMIN: [
     { href: '/admin', label: 'Dashboard', icon: BarChart3 },
+    { href: '/admin/attendance', label: 'Attendance', icon: Users },
   ],
 };
 
