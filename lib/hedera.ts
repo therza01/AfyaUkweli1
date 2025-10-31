@@ -1,16 +1,4 @@
-import {
-  Client,
-  TopicCreateTransaction,
-  TopicMessageSubmitTransaction,
-  TokenCreateTransaction,
-  TokenType,
-  TokenSupplyType,
-  TokenMintTransaction,
-  TransferTransaction,
-  AccountId,
-  PrivateKey,
-  Hbar,
-} from '@hashgraph/sdk';
+import 'server-only';
 import { randomBytes } from 'crypto';
 
 export interface HederaConfig {
@@ -51,7 +39,12 @@ export interface TransferResult {
   txHashHex: string;
 }
 
-let clientInstance: Client | null = null;
+let clientInstance: any | null = null;
+
+async function getSdk() {
+  // Lazy-load to avoid bundling SDK during build analysis
+  return await import('@hashgraph/sdk');
+}
 
 function isHederaConfigured() {
   return Boolean(process.env.HEDERA_ACCOUNT_ID && process.env.HEDERA_PRIVATE_KEY);
@@ -61,34 +54,31 @@ function mockTxHash(): string {
   return randomBytes(32).toString('hex');
 }
 
-export function getHederaClient(config?: HederaConfig): Client {
-  if (clientInstance) {
-    return clientInstance;
+export function getHederaClient(config?: HederaConfig): any {
+  // Synchronous accessor; prefer getHederaClientAsync in route handlers
+  if (!clientInstance) {
+    throw new Error('Hedera client not initialized. Use getHederaClientAsync() first.');
   }
+  return clientInstance;
+}
 
+export async function getHederaClientAsync(config?: HederaConfig) {
+  if (clientInstance) return clientInstance;
+  const sdk = await getSdk();
   const network = config?.network || process.env.HEDERA_NETWORK || 'testnet';
-  const accountId = config?.accountId || process.env.HEDERA_ACCOUNT_ID;
-  const privateKey = config?.privateKey || process.env.HEDERA_PRIVATE_KEY;
-
-  if (!accountId || !privateKey) {
-    throw new Error('Hedera credentials not configured. Set HEDERA_ACCOUNT_ID and HEDERA_PRIVATE_KEY');
-  }
-
-  const client = network === 'testnet' ? Client.forTestnet() : Client.forMainnet();
-
-  client.setOperator(
-    AccountId.fromString(accountId),
-    PrivateKey.fromString(privateKey)
-  );
-
+  const accountId = config?.accountId || process.env.HEDERA_ACCOUNT_ID!;
+  const privateKey = config?.privateKey || process.env.HEDERA_PRIVATE_KEY!;
+  const client = network === 'testnet' ? sdk.Client.forTestnet() : sdk.Client.forMainnet();
+  client.setOperator(sdk.AccountId.fromString(accountId), sdk.PrivateKey.fromString(privateKey));
   clientInstance = client;
   return client;
 }
 
 export async function createHcsTopic(memo?: string): Promise<{ topicId: string }> {
-  const client = getHederaClient();
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
 
-  const transaction = new TopicCreateTransaction()
+  const transaction = new sdk.TopicCreateTransaction()
     .setTopicMemo(memo || 'AfyaUkweli CHW Task Logs');
 
   const txResponse = await transaction.execute(client);
@@ -111,10 +101,11 @@ export async function submitTaskLog(payload: TaskLogPayload): Promise<HcsResult>
     return { txId: `mock-${Date.now()}`, txHashHex: mockTxHash() };
   }
 
-  const client = getHederaClient();
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
   const message = JSON.stringify(payload);
 
-  const transaction = new TopicMessageSubmitTransaction()
+  const transaction = new sdk.TopicMessageSubmitTransaction()
     .setTopicId(topicId)
     .setMessage(message);
 
@@ -134,10 +125,11 @@ export async function submitApprovalLog(payload: ApprovalLogPayload): Promise<Hc
     return { txId: `mock-${Date.now()}`, txHashHex: mockTxHash() };
   }
 
-  const client = getHederaClient();
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
   const message = JSON.stringify(payload);
 
-  const transaction = new TopicMessageSubmitTransaction()
+  const transaction = new sdk.TopicMessageSubmitTransaction()
     .setTopicId(topicId)
     .setMessage(message);
 
@@ -155,18 +147,19 @@ export async function createHtsToken(
   tokenSymbol: string = 'CHWP',
   initialSupply: number = 1000000
 ): Promise<{ tokenId: string }> {
-  const client = getHederaClient();
-  const treasuryAccount = AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
-  const treasuryKey = PrivateKey.fromString(process.env.HEDERA_PRIVATE_KEY!);
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
+  const treasuryAccount = sdk.AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
+  const treasuryKey = sdk.PrivateKey.fromString(process.env.HEDERA_PRIVATE_KEY!);
 
-  const transaction = await new TokenCreateTransaction()
+  const transaction = await new sdk.TokenCreateTransaction()
     .setTokenName(tokenName)
     .setTokenSymbol(tokenSymbol)
-    .setTokenType(TokenType.FungibleCommon)
+    .setTokenType(sdk.TokenType.FungibleCommon)
     .setDecimals(0)
     .setInitialSupply(initialSupply)
     .setTreasuryAccountId(treasuryAccount)
-    .setSupplyType(TokenSupplyType.Infinite)
+    .setSupplyType(sdk.TokenSupplyType.Infinite)
     .setSupplyKey(treasuryKey)
     .setAdminKey(treasuryKey)
     .setFreezeDefault(false)
@@ -189,8 +182,9 @@ export async function mintHts(amount: number): Promise<{ txId: string }> {
     return { txId: `mock-${Date.now()}` };
   }
 
-  const client = getHederaClient();
-  const transaction = await new TokenMintTransaction()
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
+  const transaction = await new sdk.TokenMintTransaction()
     .setTokenId(tokenId)
     .setAmount(amount)
     .execute(client);
@@ -208,10 +202,11 @@ export async function transferPoints(
     return { receiptStatus: 'MOCK_SUCCESS', txHashHex: mockTxHash() };
   }
 
-  const client = getHederaClient();
-  const operatorAccountId = AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
+  const client = await getHederaClientAsync();
+  const sdk = await getSdk();
+  const operatorAccountId = sdk.AccountId.fromString(process.env.HEDERA_ACCOUNT_ID!);
 
-  const transaction = await new TransferTransaction()
+  const transaction = await new sdk.TransferTransaction()
     .addTokenTransfer(tokenId, operatorAccountId, -amount)
     .addTokenTransfer(tokenId, toAccountId, amount)
     .execute(client);

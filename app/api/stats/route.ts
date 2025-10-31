@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 import { isSimpleMode } from '@/lib/config';
 
@@ -27,6 +26,7 @@ export async function GET(req: NextRequest) {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    const { supabase } = await import('@/lib/supabase');
     const { data: allTasks } = await supabase.from('tasks').select('*');
     const { data: todayTasks } = await supabase.from('tasks').select('*').gte('created_at', today.toISOString());
     const { data: last7DaysTasks } = await supabase.from('tasks').select('*').gte('created_at', sevenDaysAgo.toISOString());

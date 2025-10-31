@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { getUserFromRequest, hashConsentCode } from '@/lib/auth';
-import { submitTaskLog, getHashScanUrl } from '@/lib/hedera';
+// Hedera helpers are dynamically imported in the handler to avoid build-time bundling issues
 import { ulid } from 'ulid';
 import { z } from 'zod';
 import { isSimpleMode } from '@/lib/config';
@@ -43,6 +42,7 @@ export async function POST(req: NextRequest) {
       when: Date.now(),
     };
 
+    const { submitTaskLog, getHashScanUrl } = await import('@/lib/hedera');
     const hcsResult = await submitTaskLog(taskPayload);
 
     if (isSimpleMode()) {
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
         hashScanUrl: getHashScanUrl('transaction', hcsResult.txHashHex),
       });
     } else {
+      const { supabase } = await import('@/lib/supabase');
       const { data: task, error: insertError } = await supabase
         .from('tasks')
         .insert({
@@ -136,19 +137,21 @@ export async function GET(req: NextRequest) {
       });
     } else {
       let query: any;
-      if (user.role === 'SUPERVISOR' && user.county) {
-        query = supabase
-          .from('tasks')
-          .select('*, chw:users!inner(name, email, county)', { count: 'exact' })
-          .eq('users.county', user.county);
-      } else {
-        query = supabase
-          .from('tasks')
-          .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
-        if (user.role === 'CHW') {
-          query = query.eq('chw_id', user.id);
-        }
+    if (user.role === 'SUPERVISOR' && user.county) {
+      const { supabase } = await import('@/lib/supabase');
+      query = supabase
+        .from('tasks')
+        .select('*, chw:users!inner(name, email, county)', { count: 'exact' })
+        .eq('users.county', user.county);
+    } else {
+      const { supabase } = await import('@/lib/supabase');
+      query = supabase
+        .from('tasks')
+        .select('*, chw:users!tasks_chw_id_fkey(name, email, county)', { count: 'exact' });
+      if (user.role === 'CHW') {
+        query = query.eq('chw_id', user.id);
       }
+    }
       if (status) query = query.eq('status', status);
       query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
       const { data, error, count } = await query;

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { getUserFromRequest } from '@/lib/auth';
-import { submitApprovalLog, transferPoints, getHashScanUrl } from '@/lib/hedera';
+// Hedera helpers are dynamically imported inside the handler
 import { z } from 'zod';
 import { isSimpleMode } from '@/lib/config';
 
@@ -22,6 +20,7 @@ const POINTS_MAP = {
 
 export async function POST(req: NextRequest) {
   try {
+    const { getUserFromRequest } = await import('@/lib/auth');
     const user = await getUserFromRequest(req);
 
     if (!user || !['SUPERVISOR', 'ADMIN'].includes(user.role)) {
@@ -41,6 +40,7 @@ export async function POST(req: NextRequest) {
       if (!t) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
       task = { ...t, chw: { chw_account_id: null } };
     } else {
+      const { supabase } = await import('@/lib/supabase');
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select('*, chw:users!tasks_chw_id_fkey(chw_account_id)')
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       when: Date.now(),
     };
 
+    const { submitApprovalLog, transferPoints, getHashScanUrl } = await import('@/lib/hedera');
     const hcsResult = await submitApprovalLog(approvalPayload);
 
     let htsTransferHash = null;
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
         points_awarded: pointsAwarded as any,
       } as any);
     } else {
+      const { supabase } = await import('@/lib/supabase');
       const { data, error: updateError } = await supabase
         .from('tasks')
         .update({
