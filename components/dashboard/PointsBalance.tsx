@@ -28,16 +28,28 @@ export function PointsBalance({ userId }: PointsBalanceProps) {
   const loadPoints = async () => {
     try {
       const token = localStorage.getItem('afya_token');
-      const response = await fetch('/api/task?limit=1000', {
+
+      const taskResponse = await fetch('/api/task?limit=1000', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
+      const taskData = await taskResponse.json();
 
-      const userTasks = data.tasks?.filter((t: any) => t.chw_id === userId && t.status === 'APPROVED') || [];
-      const totalPoints = userTasks.reduce((sum: number, task: any) => sum + (task.points_awarded || 0), 0);
+      const userTasks = taskData.tasks?.filter((t: any) => t.chw_id === userId && t.status === 'APPROVED') || [];
+      const totalTaskPoints = userTasks.reduce((sum: number, task: any) => sum + (task.points_awarded || 0), 0);
+
+      const attendanceResponse = await fetch('/api/attendance?type=my-status', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const attendanceData = await attendanceResponse.json();
+
+      const attendancePoints = attendanceData.attendance?.points_earned || 0;
+      const totalPoints = totalTaskPoints + attendancePoints;
 
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -47,7 +59,7 @@ export function PointsBalance({ userId }: PointsBalanceProps) {
         .reduce((sum: number, task: any) => sum + (task.points_awarded || 0), 0);
 
       setPoints(totalPoints);
-      setWeeklyPoints(weeklyTaskPoints);
+      setWeeklyPoints(weeklyTaskPoints + attendancePoints);
     } catch (error) {
       console.error('Failed to load points:', error);
     } finally {
