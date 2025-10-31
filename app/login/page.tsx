@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Activity, Eye, EyeOff } from 'lucide-react';
+import { Activity, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [quickLoginLoading, setQuickLoginLoading] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +51,39 @@ export default function LoginPage() {
       toast.error(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickLogin = async (demoEmail: string, role: string) => {
+    setQuickLoginLoading(demoEmail);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: demoEmail, password: 'demo123' }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      localStorage.setItem('afya_token', data.token);
+      localStorage.setItem('afya_user', JSON.stringify(data.user));
+
+      toast.success(`Logged in as ${role}`);
+
+      if (data.user.role === 'CHW') {
+        router.push('/chw');
+      } else if (data.user.role === 'SUPERVISOR') {
+        router.push('/supervisor');
+      } else if (data.user.role === 'ADMIN') {
+        router.push('/admin');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+      setQuickLoginLoading(null);
     }
   };
 
@@ -130,23 +164,74 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-border/50">
-              <p className="text-xs text-muted-foreground text-center mb-3">
-                Demo accounts (password: demo123)
+              <p className="text-xs text-muted-foreground text-center mb-3 font-semibold">
+                Quick Demo Access
               </p>
-              <div className="grid gap-2 text-xs">
-                <div className="flex justify-between items-center p-2 rounded bg-secondary/50">
-                  <span className="text-muted-foreground">CHW:</span>
-                  <span className="font-mono">akinyi.otieno@afya.ke</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded bg-secondary/50">
-                  <span className="text-muted-foreground">Supervisor:</span>
-                  <span className="font-mono">mary.wekesa@afya.ke</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded bg-secondary/50">
-                  <span className="text-muted-foreground">Admin:</span>
-                  <span className="font-mono">admin@afya.ke</span>
-                </div>
+              <div className="grid gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between h-auto py-3"
+                  onClick={() => handleQuickLogin('akinyi.otieno@afya.ke', 'CHW')}
+                  disabled={quickLoginLoading !== null || loading}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <div className="text-left">
+                      <div className="text-sm font-medium">Community Health Worker</div>
+                      <div className="text-xs text-muted-foreground">akinyi.otieno@afya.ke</div>
+                    </div>
+                  </div>
+                  {quickLoginLoading === 'akinyi.otieno@afya.ke' ? (
+                    <span className="text-xs">Logging in...</span>
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between h-auto py-3"
+                  onClick={() => handleQuickLogin('mary.wekesa@afya.ke', 'Supervisor')}
+                  disabled={quickLoginLoading !== null || loading}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className="text-left">
+                      <div className="text-sm font-medium">Supervisor</div>
+                      <div className="text-xs text-muted-foreground">mary.wekesa@afya.ke</div>
+                    </div>
+                  </div>
+                  {quickLoginLoading === 'mary.wekesa@afya.ke' ? (
+                    <span className="text-xs">Logging in...</span>
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between h-auto py-3"
+                  onClick={() => handleQuickLogin('admin@afya.ke', 'Admin')}
+                  disabled={quickLoginLoading !== null || loading}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                    <div className="text-left">
+                      <div className="text-sm font-medium">Administrator</div>
+                      <div className="text-xs text-muted-foreground">admin@afya.ke</div>
+                    </div>
+                  </div>
+                  {quickLoginLoading === 'admin@afya.ke' ? (
+                    <span className="text-xs">Logging in...</span>
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </Button>
               </div>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                Click any role to login instantly
+              </p>
             </div>
           </CardContent>
         </Card>

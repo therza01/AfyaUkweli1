@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Activity, Shield, Zap, Globe, CheckCircle, ArrowRight } from 'lucide-react';
+import { Activity, Shield, Zap, Globe, CheckCircle, ArrowRight, Users, UserCheck, UserCog } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 const features = [
   {
@@ -32,6 +33,7 @@ const features = [
 export default function Home() {
   const router = useRouter();
   const [currentFeature, setCurrentFeature] = useState(0);
+  const [loading, setLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,6 +41,39 @@ export default function Home() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleQuickLogin = async (email: string, role: string) => {
+    setLoading(email);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: 'demo123' }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      localStorage.setItem('afya_token', data.token);
+      localStorage.setItem('afya_user', JSON.stringify(data.user));
+
+      toast.success(`Logged in as ${role}`);
+
+      if (data.user.role === 'CHW') {
+        router.push('/chw');
+      } else if (data.user.role === 'SUPERVISOR') {
+        router.push('/supervisor');
+      } else if (data.user.role === 'ADMIN') {
+        router.push('/admin');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+      setLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
@@ -83,18 +118,77 @@ export default function Home() {
               Empowering Community Health Workers with blockchain-verified task tracking and instant rewards
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/signup">
-                <Button size="lg" className="text-lg px-8 h-14 gap-2">
-                  Start Tracking Tasks
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="text-lg px-8 h-14">
-                  Sign In
-                </Button>
-              </Link>
+            <div className="max-w-3xl mx-auto mb-12">
+              <div className="bg-card/80 backdrop-blur border border-primary/30 rounded-2xl p-6 mb-6 shadow-xl">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold mb-1">Try Demo - One Click Access</h3>
+                  <p className="text-sm text-muted-foreground">Choose a role to explore the system</p>
+                </div>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                    onClick={() => handleQuickLogin('akinyi.otieno@afya.ke', 'CHW')}
+                    disabled={loading !== null}
+                  >
+                    <Users className="w-6 h-6 text-primary" />
+                    <div>
+                      <div className="font-semibold">Community Health Worker</div>
+                      <div className="text-xs text-muted-foreground">Log tasks & track progress</div>
+                    </div>
+                    {loading === 'akinyi.otieno@afya.ke' && (
+                      <div className="text-xs">Logging in...</div>
+                    )}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                    onClick={() => handleQuickLogin('mary.wekesa@afya.ke', 'Supervisor')}
+                    disabled={loading !== null}
+                  >
+                    <UserCheck className="w-6 h-6 text-primary" />
+                    <div>
+                      <div className="font-semibold">Supervisor</div>
+                      <div className="text-xs text-muted-foreground">Review & approve tasks</div>
+                    </div>
+                    {loading === 'mary.wekesa@afya.ke' && (
+                      <div className="text-xs">Logging in...</div>
+                    )}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                    onClick={() => handleQuickLogin('admin@afya.ke', 'Admin')}
+                    disabled={loading !== null}
+                  >
+                    <UserCog className="w-6 h-6 text-primary" />
+                    <div>
+                      <div className="font-semibold">Administrator</div>
+                      <div className="text-xs text-muted-foreground">View analytics & reports</div>
+                    </div>
+                    {loading === 'admin@afya.ke' && (
+                      <div className="text-xs">Logging in...</div>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/login" className="flex-1 sm:flex-initial">
+                  <Button size="lg" variant="ghost" className="w-full text-base px-6 h-12">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup" className="flex-1 sm:flex-initial">
+                  <Button size="lg" variant="outline" className="w-full text-base px-6 h-12 gap-2">
+                    Create Account
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
